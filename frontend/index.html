@@ -3,41 +3,63 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Calculadora na Nuvem</title>
+  <title>FitGo · Gestão de Academia</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main>
-    <span class="tag"><span class="dot"></span>Online · AWS EC2</span>
-    <h1>Calculadora na Nuvem</h1>
+  <!-- Tela de login -->
+  <section id="tela-login" class="login hidden">
+    <form id="form-login" class="login-card">
+      <div class="logo"><span class="logo-icon">⚡</span> FitGo</div>
+      <h1>Entrar no painel</h1>
+      <p class="muted">Gestão de alunos, planos e matrículas</p>
+      <label>Usuário<input name="usuario" autocomplete="username" required></label>
+      <label>Senha<input name="senha" type="password" autocomplete="current-password" required></label>
+      <button class="btn primary" type="submit">Entrar</button>
+      <p class="erro" id="erro-login"></p>
+      <p class="dica">Acesso de demonstração: <b>admin</b> / <b>academia123</b></p>
+    </form>
+  </section>
 
-    <div class="card">
-      <div class="display">
-        <div class="expr" id="expr">&nbsp;</div>
-        <div class="res" id="res">0</div>
+  <!-- Aplicação -->
+  <div id="app" class="layout hidden">
+    <aside class="sidebar">
+      <div class="logo"><span class="logo-icon">⚡</span> FitGo</div>
+      <nav>
+        <a href="#painel" data-view="painel">📊 Visão geral</a>
+        <a href="#alunos" data-view="alunos">👥 Alunos</a>
+        <a href="#planos" data-view="planos">🏷️ Planos</a>
+        <a href="#matriculas" data-view="matriculas">📝 Matrículas</a>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="user"><span class="avatar" id="avatar">A</span><span id="nome-usuario">Admin</span></div>
+        <button class="btn ghost" id="sair">Sair</button>
       </div>
+    </aside>
 
-      <div class="inputs">
-        <input id="a" type="number" step="any" placeholder="Número 1">
-        <input id="b" type="number" step="any" placeholder="Número 2">
+    <main class="content">
+      <header class="topbar">
+        <div><p class="eyebrow">Painel administrativo</p><h2 id="titulo">Visão geral</h2></div>
+        <button class="btn primary hidden" id="btn-novo">+ Novo</button>
+      </header>
+      <div id="view"></div>
+    </main>
+  </div>
+
+  <!-- Modal de formulário -->
+  <dialog id="modal">
+    <form id="form-modal" method="dialog">
+      <h3 id="modal-titulo"></h3>
+      <div id="modal-campos"></div>
+      <p class="erro" id="erro-modal"></p>
+      <div class="modal-acoes">
+        <button class="btn ghost" value="cancel" formnovalidate>Cancelar</button>
+        <button class="btn primary" id="salvar" value="ok">Salvar</button>
       </div>
+    </form>
+  </dialog>
 
-      <div class="ops">
-        <button data-op="+">+</button>
-        <button data-op="-">−</button>
-        <button data-op="*">×</button>
-        <button data-op="/">÷</button>
-      </div>
-
-      <ul class="hist" id="hist"></ul>
-    </div>
-
-    <footer>
-      N389 · Ambientes de Desenvolvimento de Software · UNIFOR<br>
-      Node.js + Express · AWS EC2 t3.micro
-    </footer>
-  </main>
-
+  <div id="toast"></div>
   <script src="script.js"></script>
 </body>
 </html>
