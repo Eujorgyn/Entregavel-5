@@ -1,0 +1,78 @@
+// Testes formais dos serviços (node:test) - rode com: node --test
+const { test, before, after } = require('node:test');
+const assert = require('node:assert');
+const { criarServidor } = require('./server');
+
+let servidor, base, cookie = '';
+const api = async (metodo, rota, corpo) => {
+  const r = await fetch(base + rota, {
+    method: metodo,
+    headers: { 'Content-Type': 'application/json', Cookie: cookie },
+    body: corpo ? JSON.stringify(corpo) : undefined
+  });
+  const setCookie = r.headers.get('set-cookie');
+  if (setCookie) cookie = setCookie.split(';')[0];
+  return { status: r.status, dados: await r.json() };
+};
+
+before(async () => {
+  servidor = criarServidor(':memory:');
+  await new Promise((ok) => servidor.listen(0, ok));
+  base = `http://127.0.0.1:${servidor.address().port}`;
+});
+after(() => servidor.close());
+
+test('bloqueia acesso sem login', async () => {
+  assert.strictEqual((await api('GET', '/api/alunos')).status, 401);
+});
+
+test('recusa senha errada', async () => {
+  assert.strictEqual((await api('POST', '/api/login', { usuario: 'admin', senha: 'errada' })).status, 401);
+});
+
+test('faz login com admin', async () => {
+  const r = await api('POST', '/api/login', { usuario: 'admin', senha: 'academia123' });
+  assert.strictEqual(r.status, 200);
+  assert.strictEqual(r.dados.perfil, 'admin');
+});
+
+test('cadastra, edita e exclui aluno', async () => {
+  const novo = await api('POST', '/api/alunos', { nome: 'Teste', cpf: '999.999.999-99' });
+  assert.strictEqual(novo.status, 201);
+  const edit = await api('PUT', `/api/alunos/${novo.dados.id}`, { nome: 'Teste Editado', cpf: '999.999.999-99' });
+  assert.strictEqual(edit.dados.nome, 'Teste Editado');
+  assert.strictEqual((await api('DELETE', `/api/alunos/${novo.dados.id}`)).status, 200);
+});
+
+test('não aceita CPF duplicado', async () => {
+  const r = await api('POST', '/api/alunos', { nome: 'Outro', cpf: '111.222.333-44' });
+  assert.strictEqual(r.status, 400);
+});
+
+test('valida campos obrigatórios', async () => {
+  assert.strictEqual((await api('POST', '/api/planos', { nome: 'Sem preço' })).status, 400);
+});
+
+test('matrícula calcula data de fim e valor pelo plano', async () => {
+  const r = await api('POST', '/api/matriculas', { aluno_id: 3, plano_id: 2, inicio: '2026-01-10' });
+  assert.strictEqual(r.status, 201);
+  assert.strictEqual(r.dados.fim, '2026-04-10');
+  assert.strictEqual(r.dados.valor, 89.9);
+});
+
+test('cancela e renova matrícula', async () => {
+  const nova = await api('POST', '/api/matriculas', { aluno_id: 3, plano_id: 1 });
+  assert.strictEqual((await api('PUT', `/api/matriculas/${nova.dados.id}/cancelar`)).status, 200);
+  const ren = await api('PUT', `/api/matriculas/${nova.dados.id}/renovar`);
+  assert.strictEqual(ren.dados.status, 'ativa');
+});
+
+test('não exclui plano com matrículas', async () => {
+  assert.strictEqual((await api('DELETE', '/api/planos/3')).status, 409);
+});
+
+test('dashboard retorna os indicadores', async () => {
+  const r = await api('GET', '/api/dashboard');
+  assert.ok(r.dados.alunos >= 3);
+  assert.ok('receita' in r.dados && Array.isArray(r.dados.recentes));
+});

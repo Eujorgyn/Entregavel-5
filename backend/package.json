@@ -1,13 +1,12 @@
 {
-  "name": "entregavel5-backend",
-  "version": "1.0.0",
-  "description": "API da calculadora na nuvem - Entregável #5 (N389 UNIFOR)",
+  "name": "fitgo-backend",
+  "version": "2.0.0",
+  "description": "FitGo - API REST de gestão de academia (Entregável #5 / Fullstack App - N389 UNIFOR)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "PORT=3000 node server.js"
+    "dev": "PORT=3000 node server.js",
+    "test": "node --test test.js"
   },
-  "dependencies": {
-    "express": "^4.19.2"
-  }
+  "engines": { "node": ">=22" }
 }
