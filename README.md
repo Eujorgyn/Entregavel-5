@@ -20,20 +20,31 @@ Aplicação web de **calculadora** (soma, subtração, multiplicação e divisã
 | Infraestrutura | AWS EC2 (t3.micro, Amazon Linux 2023) |
 | Configuração do servidor | Bash (script User Data) + systemd |
 
-## 📁 Arquivos
+## 📁 Estrutura do projeto
 
-| Arquivo | O que faz |
-|---|---|
-| `server.js` | Código da aplicação (servidor Express + página web) |
-| `user-data.sh` | Script que roda quando a máquina da AWS liga: instala o Node.js, cria a aplicação e deixa ela sempre ligada |
+```
+Entregavel-5/
+├── backend/
+│   ├── server.js       # API em Node.js + Express (também serve o frontend)
+│   └── package.json    # dependências do backend
+├── frontend/
+│   ├── index.html      # página da calculadora
+│   ├── style.css       # visual (tema escuro, minimalista)
+│   └── script.js       # chama a API do backend e mostra o resultado
+├── user-data.sh        # script de inicialização da máquina na AWS
+└── README.md
+```
+
+- **Frontend:** a página que o usuário vê. Quando ele clica numa operação, o `script.js` envia os números para o backend.
+- **Backend:** recebe os números na rota `/api/calcular`, faz a conta e devolve o resultado em JSON.
 
 ## 🚀 Como foi publicado na nuvem
 
 1. Criação de uma **instância EC2** na AWS — tipo `t3.micro` (nível gratuito), sistema **Amazon Linux 2023**, região `us-east-1`.
 2. Configuração do **grupo de segurança** (firewall) liberando a **porta 80 (HTTP)** para a internet.
 3. Uso do **User Data** (`user-data.sh`): script executado automaticamente na inicialização, que:
-   - instala o **Node.js**;
-   - cria os arquivos da aplicação e instala o **Express** com `npm`;
+   - instala o **Node.js** e o **Git**;
+   - clona este repositório do GitHub e instala o **Express** com `npm`;
    - registra a aplicação como **serviço do systemd**, para iniciar sozinha e reiniciar em caso de falha.
 4. Acesso pela internet usando o **IP público** da instância.
 
@@ -57,8 +68,9 @@ curl -X POST http://32.200.104.4/api/calcular \
 ## 💻 Rodando localmente
 
 ```bash
-npm install express
-sudo node server.js   # porta 80 (ou troque para 3000 no final do arquivo)
+cd backend
+npm install
+npm run dev      # abre em http://localhost:3000
 ```
 
 ## ☁️ Modelo de serviço
