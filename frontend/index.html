@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calculadora na Nuvem</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <span class="tag"><span class="dot"></span>Online · AWS EC2</span>
+    <h1>Calculadora na Nuvem</h1>
+
+    <div class="card">
+      <div class="display">
+        <div class="expr" id="expr">&nbsp;</div>
+        <div class="res" id="res">0</div>
+      </div>
+
+      <div class="inputs">
+        <input id="a" type="number" step="any" placeholder="Número 1">
+        <input id="b" type="number" step="any" placeholder="Número 2">
+      </div>
+
+      <div class="ops">
+        <button data-op="+">+</button>
+        <button data-op="-">−</button>
+        <button data-op="*">×</button>
+        <button data-op="/">÷</button>
+      </div>
+
+      <ul class="hist" id="hist"></ul>
+    </div>
+
+    <footer>
+      N389 · Ambientes de Desenvolvimento de Software · UNIFOR<br>
+      Node.js + Express · AWS EC2 t3.micro
+    </footer>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
