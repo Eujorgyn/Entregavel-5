@@ -3,6 +3,7 @@
 // ---------------- Ícones (SVG no estilo "Lucide") ----------------
 const ICONES = {
   logo: '<path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/>',
+  shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/>',
   user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
   lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
   arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
@@ -101,9 +102,14 @@ function mostrarLogin() {
   $('#app').classList.add('hidden'); $('#tela-login').classList.remove('hidden');
   setTimeout(() => $('#form-login [name=usuario]').focus(), 300);
 }
+const PERFIS = { admin: 'Administrador', recepcao: 'Recepção' };
+let PERFIL = 'admin';
 function mostrarApp(u) {
   $('#tela-login').classList.add('hidden'); $('#app').classList.remove('hidden');
+  PERFIL = u.perfil || 'admin';
+  document.body.classList.toggle('perfil-recepcao', PERFIL !== 'admin');
   $('#nome-usuario').textContent = u.nome;
+  $('#perfil-usuario').textContent = PERFIS[PERFIL] || PERFIL;
   const av = $('#avatar-user'); av.textContent = iniciais(u.nome); av.style.background = corDe(u.nome);
   $('#hoje').textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
   rotear();
@@ -311,7 +317,7 @@ const telas = {
         <td><div class="cell-user link-nome" data-ver="${a.id}" title="Ver ficha">${avatar(a.nome)}<div><div class="nome">${esc(a.nome)}</div><div class="tiny">${esc(a.email || '—')}</div></div></div></td>
         <td class="hide-sm num muted">${esc(a.cpf)}</td><td class="hide-sm num muted">${esc(a.telefone || '—')}</td>
         <td>${a.plano_atual ? `<span class="badge ativa">${esc(a.plano_atual)}</span>` : '<span class="badge neutro">Sem plano</span>'}</td>
-        <td class="acoes"><button class="icon-btn" title="Ver ficha" data-ver="${a.id}">${icone('eye')}</button><button class="icon-btn" title="Editar" data-ed="${a.id}">${icone('edit')}</button><button class="icon-btn del" title="Excluir" data-del="${a.id}">${icone('trash')}</button></td></tr>`).join('')
+        <td class="acoes"><button class="icon-btn" title="Ver ficha" data-ver="${a.id}">${icone('eye')}</button><button class="icon-btn" title="Editar" data-ed="${a.id}">${icone('edit')}</button><button class="icon-btn del so-admin" title="Excluir" data-del="${a.id}">${icone('trash')}</button></td></tr>`).join('')
         || `<tr><td colspan="5">${vazio('Nenhum aluno encontrado')}</td></tr>`;
       $$('[data-ver]', v).forEach((b) => { b.onclick = () => abrirFicha(b.dataset.ver); });
       $$('[data-ed]', v).forEach((b) => { b.onclick = () => form(lista.find((x) => x.id == b.dataset.ed)); });
@@ -346,14 +352,14 @@ const telas = {
       aoSalvar: async (val) => { await api(p ? 'PUT' : 'POST', p ? `/api/planos/${p.id}` : '/api/planos', val); toast(p ? 'Plano atualizado' : 'Plano criado'); telas.planos(v); }
     });
     const topo = lista.reduce((a, b) => (b.ativos > (a?.ativos ?? -1) ? b : a), null);
-    v.innerHTML = `<div class="anim">${cabecalho('Planos', `${lista.length} plano(s) disponível(is)`, `<button class="btn primary" id="novo">${icone('plus')} Novo plano</button>`)}
+    v.innerHTML = `<div class="anim">${cabecalho('Planos', `${lista.length} plano(s) disponível(is)`, `<button class="btn primary so-admin" id="novo">${icone('plus')} Novo plano</button>`)}
       <div class="plans anim">${lista.map((p) => `<article class="plan ${topo && p.id === topo.id && p.ativos ? 'top' : ''}">
         ${topo && p.id === topo.id && p.ativos ? `<span class="badge ativa tag">Mais popular</span>` : ''}
         <div><h3>${esc(p.nome)}</h3><div class="tiny">${p.duracao_meses} ${p.duracao_meses > 1 ? 'meses' : 'mês'} de duração</div></div>
         <div class="price">${brl(p.preco)}<small> /mês</small></div>
         <ul>${(p.descricao || 'Acesso à academia').split(/\s*\+\s*|,\s*/).map((x) => `<li>${icone('check')}${esc(x)}</li>`).join('')}</ul>
         <div class="plan-foot"><span class="tiny">${icone('users', '')} ${p.ativos} aluno(s) ativo(s)</span>
-          <span><button class="icon-btn" title="Editar" data-ed="${p.id}">${icone('edit')}</button><button class="icon-btn del" title="Excluir" data-del="${p.id}">${icone('trash')}</button></span></div>
+          <span class="so-admin"><button class="icon-btn" title="Editar" data-ed="${p.id}">${icone('edit')}</button><button class="icon-btn del" title="Excluir" data-del="${p.id}">${icone('trash')}</button></span></div>
       </article>`).join('') || vazio('Nenhum plano cadastrado', 'tag')}</div></div>`;
     $('#novo').onclick = () => form();
     $$('[data-ed]', v).forEach((b) => { b.onclick = () => form(lista.find((x) => x.id == b.dataset.ed)); });
@@ -388,7 +394,7 @@ const telas = {
           <td class="hide-sm tiny">${dataBR(m.inicio)} → ${dataBR(m.fim)}</td>
           <td class="hide-sm"><div class="progress ${s !== 'ativa' ? 'off' : rest <= 7 ? 'warn' : ''}"><span style="width:${s === 'ativa' ? Math.max(4, pct) : 100}%"></span></div><div class="tiny" style="margin-top:4px">${s === 'ativa' ? `${rest} dia(s)` : '—'}</div></td>
           <td><span class="badge ${s}">${SIT_TXT[s]}</span></td>
-          <td class="acoes"><button class="icon-btn" title="Renovar" data-ren="${m.id}">${icone('refresh')}</button>${m.status === 'ativa' ? `<button class="icon-btn del" title="Cancelar" data-can="${m.id}">${icone('ban')}</button>` : ''}</td></tr>`;
+          <td class="acoes"><button class="icon-btn" title="Renovar" data-ren="${m.id}">${icone('refresh')}</button>${m.status === 'ativa' ? `<button class="icon-btn del so-admin" title="Cancelar" data-can="${m.id}">${icone('ban')}</button>` : ''}</td></tr>`;
       }).join('') || `<tr><td colspan="6">${vazio('Nenhuma matrícula encontrada', 'clipboard')}</td></tr>`;
       $$('[data-ver]', v).forEach((b) => { b.onclick = () => abrirFicha(b.dataset.ver); });
       $$('[data-ren]', v).forEach((b) => { b.onclick = async () => {
@@ -423,7 +429,36 @@ const telas = {
 };
 
 // ---------------- Navegação ----------------
-const TITULOS = { painel: 'Visão geral', alunos: 'Alunos', planos: 'Planos', matriculas: 'Matrículas' };
+telas.equipe = async (v) => {
+  if (PERFIL !== 'admin') { v.innerHTML = vazio('Somente administradores acessam a equipe', 'shield'); return; }
+  v.innerHTML = skeleton(3);
+  const lista = await api('GET', '/api/usuarios');
+  v.innerHTML = `<div class="anim">${cabecalho('Equipe', `${lista.length} usuário(s) com acesso ao sistema`, `<button class="btn primary" id="novo">${icone('plus')} Novo usuário</button>`)}
+    <div class="panel" style="margin-bottom:16px"><div class="tiny" style="display:flex;gap:10px;align-items:center">${icone('shield')}
+      <span><b style="color:var(--txt)">Administrador</b> faz tudo. <b style="color:var(--txt)">Recepção</b> cadastra e edita alunos, matricula e renova — mas não exclui alunos, não cancela matrículas e não altera planos.</span></div></div>
+    <div class="panel tabela-wrap"><table class="tabela"><thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th></th></tr></thead><tbody>
+    ${lista.map((u) => `<tr><td><div class="cell-user">${avatar(u.nome)}<div class="nome">${esc(u.nome)}</div></div></td>
+      <td class="num">${esc(u.usuario)}</td><td><span class="badge ${u.perfil === 'admin' ? 'ativa' : 'neutro'}">${PERFIS[u.perfil] || u.perfil}</span></td>
+      <td class="acoes"><button class="icon-btn del" title="Excluir" data-del="${u.id}">${icone('trash')}</button></td></tr>`).join('')}
+    </tbody></table></div></div>`;
+  $('#novo').onclick = () => abrirModal({
+    titulo: 'Novo usuário', sub: 'Dê acesso a um funcionário da academia', botao: 'Criar usuário',
+    campos: [
+      { nome: 'nome', rotulo: 'Nome', obrig: true },
+      { nome: 'usuario', rotulo: 'Usuário de acesso', obrig: true, meia: true },
+      { nome: 'senha', rotulo: 'Senha (mín. 6)', tipo: 'password', obrig: true, meia: true },
+      { nome: 'perfil', rotulo: 'Perfil', obrig: true, opcoes: [{ v: 'recepcao', t: 'Recepção' }, { v: 'admin', t: 'Administrador' }] }
+    ],
+    aoSalvar: async (val) => { await api('POST', '/api/usuarios', val); toast('Usuário criado'); telas.equipe(v); }
+  });
+  $$('[data-del]', v).forEach((b) => { b.onclick = async () => {
+    const u = lista.find((x) => x.id == b.dataset.del);
+    if (!(await confirmar(`Remover o acesso de ${u.nome}?`, 'A pessoa não conseguirá mais entrar no sistema.'))) return;
+    try { await api('DELETE', `/api/usuarios/${u.id}`); toast('Usuário removido'); telas.equipe(v); } catch (e) { toast(e.message, 'err'); }
+  }; });
+};
+
+const TITULOS = { painel: 'Visão geral', alunos: 'Alunos', planos: 'Planos', matriculas: 'Matrículas', equipe: 'Equipe' };
 async function atualizarContadores() {
   try {
     const d = await api('GET', '/api/dashboard');

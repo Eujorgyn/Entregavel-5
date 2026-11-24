@@ -338,3 +338,11 @@ dialog.drawer[open] { animation: slideIn .3s var(--ease) both; }
 .tl-dot.cancelada { border-color: var(--red); }
 .link-nome { cursor: pointer; }
 .link-nome:hover .nome { color: var(--accent); }
+
+/* Autorização: esconde ações só-admin para o perfil recepção */
+body.perfil-recepcao .so-admin { display: none !important; }
+
+/* Logo pixel-art (gerado no Gemini e vetorizado em SVG) */
+.logo-img { height: 26px; width: auto; display: block; image-rendering: pixelated; }
+.login-card .logo-img, .login .logo-img { height: 32px; }
+.sidebar .logo-img { height: 22px; }

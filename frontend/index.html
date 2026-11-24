@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>FitGo · Gestão de Academia</title>
+  <link rel="icon" type="image/svg+xml" href="img/favicon.svg">
   <meta name="theme-color" content="#09090b">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23a3e635'/%3E%3Cpath d='M9 16h14M6 12v8M26 12v8M10 10v12M22 10v12' stroke='%230b0f05' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,10 +27,10 @@
 
     <div class="login-side">
       <form id="form-login" class="login-card" autocomplete="on">
-        <span class="logo"><span class="logo-mark"><span data-icon="logo"></span></span>FitGo</span>
+        <span class="logo"><img src="img/logo-fitgo.svg" alt="FitGo" class="logo-img"></span>
         <div>
           <h1>Bem-vindo de volta</h1>
-          <p class="sub">Entre com sua conta de administrador.</p>
+          <p class="sub">Entre com sua conta da equipe.</p>
         </div>
         <label class="field"><span>Usuário</span>
           <div class="input-icon"><span data-icon="user"></span><input class="input" name="usuario" autocomplete="username" placeholder="seu.usuario" required></div>
@@ -39,7 +40,7 @@
         </label>
         <button class="btn primary" type="submit" id="btn-entrar">Entrar <span data-icon="arrow"></span></button>
         <p class="erro" id="erro-login"></p>
-        <div class="demo"><span data-icon="info"></span><span>Demonstração: <code>admin</code> / <code>academia123</code></span></div>
+        <div class="demo"><span data-icon="info"></span><span>Demonstração: <code>admin</code> / <code>academia123</code> · recepção: <code>recepcao</code> / <code>recepcao123</code></span></div>
       </form>
     </div>
   </section>
@@ -47,7 +48,7 @@
   <!-- ============ APLICAÇÃO ============ -->
   <div id="app" class="layout hidden">
     <aside class="sidebar" id="sidebar">
-      <span class="logo"><span class="logo-mark"><span data-icon="logo"></span></span>FitGo</span>
+      <span class="logo"><img src="img/logo-fitgo.svg" alt="FitGo" class="logo-img"></span>
       <nav class="nav">
         <div class="nav-label">Geral</div>
         <a href="#painel" data-view="painel"><span data-icon="grid"></span>Visão geral</a>
@@ -55,13 +56,15 @@
         <a href="#alunos" data-view="alunos"><span data-icon="users"></span>Alunos <span class="count" id="c-alunos"></span></a>
         <a href="#planos" data-view="planos"><span data-icon="tag"></span>Planos <span class="count" id="c-planos"></span></a>
         <a href="#matriculas" data-view="matriculas"><span data-icon="clipboard"></span>Matrículas <span class="count" id="c-mat"></span></a>
+        <div class="nav-label so-admin">Administração</div>
+        <a href="#equipe" data-view="equipe" class="so-admin"><span data-icon="shield"></span>Equipe</a>
       </nav>
       <div class="side-card">
         <div class="side-user">
           <span class="avatar" id="avatar-user">A</span>
           <div style="min-width:0;flex:1">
             <div class="nome" id="nome-usuario">Administrador</div>
-            <div class="tiny"><span class="status-dot"></span>Online</div>
+            <div class="tiny"><span class="status-dot"></span><span id="perfil-usuario">Administrador</span></div>
           </div>
           <button class="icon-btn" id="sair" title="Sair"><span data-icon="logout"></span></button>
         </div>
