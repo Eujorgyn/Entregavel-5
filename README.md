@@ -113,6 +113,22 @@ npm run dev      # http://localhost:3000
 3. O script `user-data.sh` instala o Node.js 22, baixa este repositório e registra o sistema como **serviço do systemd** (inicia sozinho e reinicia em caso de falha).
 4. Acesso pelo **IP público** da instância.
 
+## 📚 Documentação do projeto
+
+| Etapa | Documento |
+|---|---|
+| Definição do sistema, funcionalidades e requisitos | [docs/01-definicao-do-sistema.md](docs/01-definicao-do-sistema.md) |
+| Layout das telas e lista de eventos | [docs/02-telas-e-eventos.md](docs/02-telas-e-eventos.md) |
+| Estrutura do banco de dados (diagrama ER) | [docs/03-banco-de-dados.md](docs/03-banco-de-dados.md) |
+| Especificação dos serviços (entrada e saída) | [docs/04-servicos.md](docs/04-servicos.md) |
+
+## 🐳 Rodar com Docker
+
+```bash
+docker build -t fitgo .
+docker run -d -p 80:80 -v fitgo-dados:/app/backend/data --name fitgo fitgo
+```
+
 ## 🔐 Autenticação e autorização
 
 - **Autenticação:** login com senha (hash `scrypt`) e sessão em cookie `HttpOnly`.
