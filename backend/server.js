@@ -80,12 +80,44 @@ function criarServidor(arquivoBanco) {
         JOIN alunos a ON a.id=m.aluno_id JOIN planos p ON p.id=m.plano_id
         WHERE m.status='ativa' AND m.fim BETWEEN ? AND ? ORDER BY m.fim`).all(hoje, em7),
       recentes: db.prepare(`SELECT m.id, a.nome AS aluno, p.nome AS plano, m.inicio, m.valor, m.status FROM matriculas m
-        JOIN alunos a ON a.id=m.aluno_id JOIN planos p ON p.id=m.plano_id ORDER BY m.id DESC LIMIT 5`).all()
+        JOIN alunos a ON a.id=m.aluno_id JOIN planos p ON p.id=m.plano_id ORDER BY m.inicio DESC, m.id DESC LIMIT 5`).all(),
+      // novas matrículas por mês (últimos 6 meses) - gráfico de barras
+      porMes: (() => {
+        const meses = [];
+        const d = new Date(); d.setDate(1);
+        for (let i = 5; i >= 0; i--) {
+          const x = new Date(d.getFullYear(), d.getMonth() - i, 1);
+          meses.push(`${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}`);
+        }
+        const linhas = db.prepare(`SELECT substr(inicio,1,7) AS mes, COUNT(*) AS total, SUM(valor) AS valor
+          FROM matriculas WHERE substr(inicio,1,7) >= ? GROUP BY mes`).all(meses[0]);
+        return meses.map((mes) => {
+          const l = linhas.find((x) => x.mes === mes);
+          return { mes, total: l ? l.total : 0, valor: l ? l.valor : 0 };
+        });
+      })(),
+      // matrículas ativas por plano - gráfico de rosca
+      porPlano: db.prepare(`SELECT p.nome AS plano, COUNT(m.id) AS total FROM planos p
+        LEFT JOIN matriculas m ON m.plano_id=p.id AND m.status='ativa' AND m.fim >= ?
+        GROUP BY p.id ORDER BY total DESC`).all(hoje)
     });
   });
 
   // CRUD de alunos
-  rota('GET', '/api/alunos', false, async (req, res) => json(res, 200, db.prepare('SELECT * FROM alunos ORDER BY nome').all()));
+  rota('GET', '/api/alunos', false, async (req, res) => {
+    const hoje = new Date().toISOString().slice(0, 10);
+    json(res, 200, db.prepare(`SELECT a.*,
+      (SELECT p.nome FROM matriculas m JOIN planos p ON p.id=m.plano_id
+        WHERE m.aluno_id=a.id AND m.status='ativa' AND m.fim >= ? ORDER BY m.fim DESC LIMIT 1) AS plano_atual
+      FROM alunos a ORDER BY a.nome`).all(hoje));
+  });
+  rota('GET', '/api/alunos/:id', false, async (req, res, p) => {
+    const aluno = db.prepare('SELECT * FROM alunos WHERE id = ?').get(p.id);
+    if (!aluno) return json(res, 404, { erro: 'Aluno não encontrado' });
+    aluno.matriculas = db.prepare(`SELECT m.*, pl.nome AS plano FROM matriculas m
+      JOIN planos pl ON pl.id=m.plano_id WHERE m.aluno_id = ? ORDER BY m.inicio DESC`).all(p.id);
+    json(res, 200, aluno);
+  });
   rota('POST', '/api/alunos', false, async (req, res) => {
     const b = await lerCorpo(req); obrigatorio(b, ['nome', 'cpf']);
     const r = db.prepare('INSERT INTO alunos (nome, cpf, telefone, email, nascimento) VALUES (?, ?, ?, ?, ?)')
@@ -105,7 +137,12 @@ function criarServidor(arquivoBanco) {
   });
 
   // CRUD de planos
-  rota('GET', '/api/planos', false, async (req, res) => json(res, 200, db.prepare('SELECT * FROM planos ORDER BY preco DESC').all()));
+  rota('GET', '/api/planos', false, async (req, res) => {
+    const hoje = new Date().toISOString().slice(0, 10);
+    json(res, 200, db.prepare(`SELECT p.*,
+      (SELECT COUNT(*) FROM matriculas m WHERE m.plano_id=p.id AND m.status='ativa' AND m.fim >= ?) AS ativos
+      FROM planos p ORDER BY p.preco`).all(hoje));
+  });
   rota('POST', '/api/planos', false, async (req, res) => {
     const b = await lerCorpo(req); obrigatorio(b, ['nome', 'preco', 'duracao_meses']);
     const r = db.prepare('INSERT INTO planos (nome, preco, duracao_meses, descricao) VALUES (?, ?, ?, ?)')

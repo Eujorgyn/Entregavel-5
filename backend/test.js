@@ -76,3 +76,25 @@ test('dashboard retorna os indicadores', async () => {
   assert.ok(r.dados.alunos >= 3);
   assert.ok('receita' in r.dados && Array.isArray(r.dados.recentes));
 });
+
+test('dashboard traz dados dos gráficos (6 meses e planos)', async () => {
+  const r = await api('GET', '/api/dashboard');
+  assert.strictEqual(r.dados.porMes.length, 6);
+  assert.ok(r.dados.porMes.every((m) => /^\d{4}-\d{2}$/.test(m.mes) && m.total >= 0));
+  assert.ok(r.dados.porPlano.length >= 3);
+});
+
+test('ficha do aluno traz o histórico de matrículas', async () => {
+  const r = await api('GET', '/api/alunos/1');
+  assert.strictEqual(r.status, 200);
+  assert.strictEqual(r.dados.nome, 'Ana Souza');
+  assert.ok(Array.isArray(r.dados.matriculas) && r.dados.matriculas.length >= 1);
+  assert.strictEqual((await api('GET', '/api/alunos/9999')).status, 404);
+});
+
+test('lista de alunos informa o plano atual e planos informam ativos', async () => {
+  const alunos = (await api('GET', '/api/alunos')).dados;
+  assert.ok(alunos.some((a) => a.plano_atual));
+  const planos = (await api('GET', '/api/planos')).dados;
+  assert.ok(planos.every((p) => typeof p.ativos === 'number'));
+});
