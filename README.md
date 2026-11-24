@@ -22,17 +22,20 @@ O **FitGo** é um painel administrativo para academias. Com ele, o administrador
 | 4 | **Matricular** aluno em um plano (data de vencimento e valor calculados automaticamente) |
 | 5 | **Renovar** matrícula |
 | 6 | **Cancelar** matrícula |
-| 7 | **Painel**: total de alunos, matrículas ativas, receita mensal, matrículas recentes e vencimentos dos próximos 7 dias |
+| 7 | **Painel**: indicadores animados, gráfico de novas matrículas (6 meses), distribuição por plano, matrículas recentes e vencimentos da semana |
+| 8 | **Ficha do aluno**: dados, idade, histórico de matrículas em linha do tempo e atalho para matricular |
+| 9 | **Exportar CSV** de alunos e matrículas (abre no Excel) |
+| 10 | Busca e filtros (com plano / sem plano · ativas / vencidas / canceladas) |
 
 ## 🛠️ Tecnologias
 
 | Camada | Tecnologia |
 |---|---|
-| Frontend | HTML · CSS · JavaScript (SPA, sem framework) |
+| Frontend | HTML · CSS · JavaScript (SPA, sem framework) · ícones SVG · gráficos em SVG puro · animações CSS |
 | Backend | Node.js 22 · API REST (módulo `http` nativo, rotas próprias) |
 | Banco de dados | **SQLite** (`node:sqlite`, nativo do Node 22) |
 | Segurança | Senhas com hash `scrypt` + salt · sessão via cookie `HttpOnly` · rotas protegidas |
-| Testes | `node:test` — 10 testes automatizados dos serviços |
+| Testes | `node:test` — 13 testes automatizados dos serviços |
 | Nuvem | AWS EC2 (t3.micro, Amazon Linux 2023) + systemd |
 
 ## 📁 Estrutura
@@ -71,7 +74,7 @@ Todas as rotas (exceto login e `/health`) exigem estar logado.
 | `POST` | `/api/logout` | Encerra a sessão |
 | `GET` | `/api/dashboard` | Indicadores do painel |
 | `GET` `POST` | `/api/alunos` | Lista / cadastra alunos |
-| `PUT` `DELETE` | `/api/alunos/:id` | Edita / exclui aluno |
+| `GET` `PUT` `DELETE` | `/api/alunos/:id` | Ficha (com histórico) / edita / exclui aluno |
 | `GET` `POST` | `/api/planos` | Lista / cria planos |
 | `PUT` `DELETE` | `/api/planos/:id` | Edita / exclui plano |
 | `GET` `POST` | `/api/matriculas` | Lista / cria matrículas |
@@ -86,7 +89,7 @@ cd backend
 node --test test.js
 ```
 
-Cobrem: bloqueio sem login, senha errada, login, CRUD de alunos, CPF duplicado, campos obrigatórios, cálculo da matrícula, cancelamento/renovação, regra de exclusão de plano e o painel.
+Cobrem: bloqueio sem login, senha errada, login, CRUD de alunos, CPF duplicado, campos obrigatórios, cálculo da matrícula, cancelamento/renovação, regra de exclusão de plano, painel e gráficos, ficha do aluno e indicadores de planos.
 
 ## 💻 Rodando localmente
 
@@ -104,4 +107,10 @@ npm run dev      # http://localhost:3000
 3. O script `user-data.sh` instala o Node.js 22, baixa este repositório e registra o sistema como **serviço do systemd** (inicia sozinho e reinicia em caso de falha).
 4. Acesso pelo **IP público** da instância.
 
-Modelo de serviço: **IaaS** — a AWS fornece a máquina virtual e toda a configuração é feita por nós.
+## 📷 Créditos
+
+Fotos do [Unsplash](https://unsplash.com) (licença livre): Rick Barrett e Mohamed Fareed.
+
+## ☁️ Modelo de serviço
+
+**IaaS** — a AWS fornece a máquina virtual e toda a configuração é feita por nós.
