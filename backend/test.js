@@ -98,3 +98,22 @@ test('lista de alunos informa o plano atual e planos informam ativos', async () 
   const planos = (await api('GET', '/api/planos')).dados;
   assert.ok(planos.every((p) => typeof p.ativos === 'number'));
 });
+
+test('autorização: recepção cadastra aluno, mas não exclui nem mexe em planos', async () => {
+  await api('POST', '/api/logout');
+  assert.strictEqual((await api('POST', '/api/login', { usuario: 'recepcao', senha: 'recepcao123' })).dados.perfil, 'recepcao');
+  const novo = await api('POST', '/api/alunos', { nome: 'Teste Recepção', cpf: '999.888.777-66' });
+  assert.strictEqual(novo.status, 201);
+  assert.strictEqual((await api('DELETE', `/api/alunos/${novo.dados.id}`)).status, 403);
+  assert.strictEqual((await api('POST', '/api/planos', { nome: 'X', preco: 1, duracao_meses: 1 })).status, 403);
+  assert.strictEqual((await api('GET', '/api/usuarios')).status, 403);
+  await api('POST', '/api/logout');
+  await api('POST', '/api/login', { usuario: 'admin', senha: 'academia123' });
+});
+
+test('admin gerencia a equipe (cria e exclui usuário)', async () => {
+  const u = await api('POST', '/api/usuarios', { nome: 'Novo Func', usuario: 'func1', senha: '123456', perfil: 'recepcao' });
+  assert.strictEqual(u.status, 201);
+  assert.strictEqual((await api('POST', '/api/usuarios', { nome: 'Dup', usuario: 'func1', senha: '123456', perfil: 'recepcao' })).status, 409);
+  assert.strictEqual((await api('DELETE', `/api/usuarios/${u.dados.id}`)).status, 200);
+});

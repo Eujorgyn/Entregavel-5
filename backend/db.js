@@ -69,6 +69,8 @@ function abrirBanco(arquivo) {
   if (!temUsuario) {
     db.prepare('INSERT INTO usuarios (nome, usuario, senha, perfil) VALUES (?, ?, ?, ?)')
       .run('Administrador', 'admin', hashSenha('academia123'), 'admin');
+    db.prepare('INSERT INTO usuarios (nome, usuario, senha, perfil) VALUES (?, ?, ?, ?)')
+      .run('Recepção', 'recepcao', hashSenha('recepcao123'), 'recepcao');
 
     const plano = db.prepare('INSERT INTO planos (nome, preco, duracao_meses, descricao) VALUES (?, ?, ?, ?)');
     plano.run('Mensal', 99.9, 1, 'Acesso livre à musculação');

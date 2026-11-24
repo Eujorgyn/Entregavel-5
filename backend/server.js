@@ -4,7 +4,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { abrirBanco, conferirSenha } = require('./db');
+const { abrirBanco, conferirSenha, hashSenha } = require('./db');
 
 const FRONTEND = path.join(__dirname, '..', 'frontend');
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml' };
@@ -42,10 +42,11 @@ function criarServidor(arquivoBanco) {
 
   // ---------- rotas ----------
   const rotas = [];
-  const rota = (metodo, padrao, publica, fn) => {
+  // publica: não exige login · admin: só o perfil 'admin' pode usar (autorização)
+  const rota = (metodo, padrao, publica, fn, admin = false) => {
     const chaves = [];
     const regex = new RegExp('^' + padrao.replace(/:(\w+)/g, (_, k) => { chaves.push(k); return '(\\d+)'; }) + '$');
-    rotas.push({ metodo, regex, chaves, publica, fn });
+    rotas.push({ metodo, regex, chaves, publica, fn, admin });
   };
 
   // Autenticação
@@ -65,6 +66,24 @@ function criarServidor(arquivoBanco) {
     json(res, 200, { ok: true });
   });
   rota('GET', '/api/me', false, async (req, res, p, user) => json(res, 200, user));
+
+  // Usuários da equipe (somente admin)
+  rota('GET', '/api/usuarios', false, async (req, res) =>
+    json(res, 200, db.prepare('SELECT id, nome, usuario, perfil FROM usuarios ORDER BY id').all()), true);
+  rota('POST', '/api/usuarios', false, async (req, res) => {
+    const b = await lerCorpo(req); obrigatorio(b, ['nome', 'usuario', 'senha', 'perfil']);
+    if (!['admin', 'recepcao'].includes(b.perfil)) return json(res, 400, { erro: 'Perfil inválido' });
+    if (String(b.senha).length < 6) return json(res, 400, { erro: 'A senha precisa de pelo menos 6 caracteres' });
+    if (db.prepare('SELECT 1 FROM usuarios WHERE usuario = ?').get(b.usuario.trim())) return json(res, 409, { erro: 'Usuário já existe' });
+    const r = db.prepare('INSERT INTO usuarios (nome, usuario, senha, perfil) VALUES (?, ?, ?, ?)')
+      .run(b.nome.trim(), b.usuario.trim(), hashSenha(String(b.senha)), b.perfil);
+    json(res, 201, db.prepare('SELECT id, nome, usuario, perfil FROM usuarios WHERE id = ?').get(r.lastInsertRowid));
+  }, true);
+  rota('DELETE', '/api/usuarios/:id', false, async (req, res, p, user) => {
+    if (Number(p.id) === user.id) return json(res, 400, { erro: 'Você não pode excluir o próprio usuário' });
+    const r = db.prepare('DELETE FROM usuarios WHERE id = ?').run(p.id);
+    json(res, r.changes ? 200 : 404, r.changes ? { ok: true } : { erro: 'Usuário não encontrado' });
+  }, true);
 
   // Painel (dashboard)
   rota('GET', '/api/dashboard', false, async (req, res) => {
@@ -134,7 +153,7 @@ function criarServidor(arquivoBanco) {
   rota('DELETE', '/api/alunos/:id', false, async (req, res, p) => {
     const r = db.prepare('DELETE FROM alunos WHERE id = ?').run(p.id);
     json(res, r.changes ? 200 : 404, r.changes ? { ok: true } : { erro: 'Aluno não encontrado' });
-  });
+  }, true);
 
   // CRUD de planos
   rota('GET', '/api/planos', false, async (req, res) => {
@@ -148,20 +167,20 @@ function criarServidor(arquivoBanco) {
     const r = db.prepare('INSERT INTO planos (nome, preco, duracao_meses, descricao) VALUES (?, ?, ?, ?)')
       .run(b.nome.trim(), Number(b.preco), Number(b.duracao_meses), b.descricao || '');
     json(res, 201, db.prepare('SELECT * FROM planos WHERE id = ?').get(r.lastInsertRowid));
-  });
+  }, true);
   rota('PUT', '/api/planos/:id', false, async (req, res, p) => {
     const b = await lerCorpo(req); obrigatorio(b, ['nome', 'preco', 'duracao_meses']);
     const r = db.prepare('UPDATE planos SET nome=?, preco=?, duracao_meses=?, descricao=? WHERE id=?')
       .run(b.nome.trim(), Number(b.preco), Number(b.duracao_meses), b.descricao || '', p.id);
     if (!r.changes) return json(res, 404, { erro: 'Plano não encontrado' });
     json(res, 200, db.prepare('SELECT * FROM planos WHERE id = ?').get(p.id));
-  });
+  }, true);
   rota('DELETE', '/api/planos/:id', false, async (req, res, p) => {
     const emUso = db.prepare('SELECT COUNT(*) AS n FROM matriculas WHERE plano_id = ?').get(p.id).n;
     if (emUso) return json(res, 409, { erro: 'Plano possui matrículas e não pode ser excluído' });
     const r = db.prepare('DELETE FROM planos WHERE id = ?').run(p.id);
     json(res, r.changes ? 200 : 404, r.changes ? { ok: true } : { erro: 'Plano não encontrado' });
-  });
+  }, true);
 
   // Matrículas
   const SQL_MAT = `SELECT m.*, a.nome AS aluno, p.nome AS plano FROM matriculas m
@@ -180,7 +199,7 @@ function criarServidor(arquivoBanco) {
   rota('PUT', '/api/matriculas/:id/cancelar', false, async (req, res, p) => {
     const r = db.prepare("UPDATE matriculas SET status='cancelada' WHERE id = ?").run(p.id);
     json(res, r.changes ? 200 : 404, r.changes ? { ok: true } : { erro: 'Matrícula não encontrada' });
-  });
+  }, true);
   rota('PUT', '/api/matriculas/:id/renovar', false, async (req, res, p) => {
     const m = db.prepare('SELECT m.*, p.duracao_meses, p.preco FROM matriculas m JOIN planos p ON p.id=m.plano_id WHERE m.id = ?').get(p.id);
     if (!m) return json(res, 404, { erro: 'Matrícula não encontrada' });
@@ -204,6 +223,7 @@ function criarServidor(arquivoBanco) {
         const params = Object.fromEntries(r.chaves.map((k, i) => [k, Number(m[i + 1])]));
         const user = usuarioLogado(req);
         if (!r.publica && !user) return json(res, 401, { erro: 'Faça login para continuar' });
+        if (r.admin && user.perfil !== 'admin') return json(res, 403, { erro: 'Seu perfil não tem permissão para esta ação' });
         try { return await r.fn(req, res, params, user); }
         catch (e) {
           const msg = /UNIQUE/.test(e.message) ? 'Já existe um registro com esse CPF' : e.message;
