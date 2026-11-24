@@ -129,7 +129,7 @@ Usuários de demonstração: `admin` / `academia123` e `recepcao` / `recepcao123
 
 ## 📷 Créditos
 
-Fotos do [Unsplash](https://unsplash.com) (licença livre): Rick Barrett e Mohamed Fareed. Logo pixel-art gerado com Google Gemini e vetorizado em SVG.
+Fotos do [Unsplash](https://unsplash.com) (licença livre): Rick Barrett e Mohamed Fareed. Logo gerado com Google Gemini e vetorizado em SVG.
 
 ## ☁️ Modelo de serviço
 
